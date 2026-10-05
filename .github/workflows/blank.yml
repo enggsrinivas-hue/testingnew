@@ -15,13 +15,30 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
+      - name: Arrange files
+        run: |
+          mkdir -p proj/app/src/main/java/com/smsbuddy/app
+          mkdir -p proj/app/src/main/res/layout proj/app/src/main/res/values
+          mkdir -p proj/app/src/main/res/drawable proj/app/src/main/res/mipmap-anydpi-v26
+          for f in EmailWorker Mailer MainActivity Prefs SmsReceiver; do
+            cp $f.kt proj/app/src/main/java/com/smsbuddy/app/
+          done
+          cp AndroidManifest.xml proj/app/src/main/
+          cp activity_main.xml proj/app/src/main/res/layout/
+          cp bg_gradient.xml ic_launcher_foreground.xml proj/app/src/main/res/drawable/
+          cp ic_launcher.xml proj/app/src/main/res/mipmap-anydpi-v26/
+          cp colors.xml strings.xml themes.xml proj/app/src/main/res/values/
+          cp settings.gradle.kts gradle.properties proj/
+          for f in build.gradle*.kts; do
+            if grep -q "apply false" "$f"; then cp "$f" proj/build.gradle.kts; fi
+            if grep -q "compileSdk" "$f"; then cp "$f" proj/app/build.gradle.kts; fi
+          done
+          find proj -type f | sort
       - name: Build
         run: |
-          DIR=$(dirname "$(find . -name settings.gradle.kts | head -1)")
-          echo "Project folder: $DIR"
-          cd "$DIR"
-          gradle assembleDebug --no-daemon --stacktrace
+          cd proj
+          gradle assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: SmsBuddy-apk
-          path: "**/outputs/apk/debug/*.apk"
+          path: proj/app/build/outputs/apk/debug/app-debug.apk
